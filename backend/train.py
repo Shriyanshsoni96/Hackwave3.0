@@ -1,10 +1,14 @@
-
+﻿
 # ============================================================
 # Autonomous RevOps Agent
 # Step 1: Dataset Connection and Verification
 # ============================================================
 
 from pathlib import Path
+from sklearn.metrics import precision_score, recall_score
+MODEL_PATH = Path(__file__).resolve().parent / 'churn_model.joblib'
+
+import joblib
 
 import pandas as pd
 from sklearn.compose import ColumnTransformer
@@ -229,7 +233,40 @@ def evaluate_model(y_test, predictions, probabilities):
 if __name__ == "__main__":
     df = load_dataset()
 
-    print("\n" + "=" * 55)
-    print("STEP 1 COMPLETED: DATASET VERIFIED")
-    print("Model training has not started yet.")
-    print("=" * 55)
+    train_df, test_df = split_data_by_date(df)
+
+    X_train, y_train = prepare_features(train_df)
+    X_test, y_test = prepare_features(test_df)
+
+    model = build_model(X_train)
+
+    print("\nTraining Random Forest model...")
+    model.fit(X_train, y_train)
+    print("Model training completed.")
+
+    joblib.dump(model, MODEL_PATH)
+    print(f"Model saved successfully: {MODEL_PATH}")
+
+    probabilities = model.predict_proba(X_test)[:, 1]
+
+    print("\nThreshold Comparison:")
+    print(f"{'Threshold':<12}{'Predicted Churn':<20}{'Precision':<12}{'Recall':<12}")
+
+    for threshold in [0.01, 0.02, 0.05, 0.10, 0.20, 0.50]:
+        predictions = (probabilities >= threshold).astype(int)
+        precision = precision_score(y_test, predictions, zero_division=0)
+        recall = recall_score(y_test, predictions, zero_division=0)
+
+        print(
+            f"{threshold:<12.2f}{int(predictions.sum()):<20}"
+            f"{precision:<12.3f}{recall:<12.3f}"
+        )
+
+    final_predictions = (probabilities >= 0.50).astype(int)
+
+    print("\nFinal Evaluation:")
+    evaluate_model(y_test, final_predictions, probabilities)
+
+
+
+
