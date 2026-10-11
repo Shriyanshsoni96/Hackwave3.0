@@ -1,0 +1,2 @@
+customer_id,tenure_month,plan_type,monthly_price,mrr,sessions,feature_usage_score,support_tickets,payment_failures,nps_score,product_incident,active_seats
+DEMO_CUST_9001,6,Starter,199,199,8,25,3,1,3,1,1
